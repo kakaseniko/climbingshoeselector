@@ -81,13 +81,13 @@ def main():
             ax.add_patch(rect)
         st.pyplot(fig)
 
-     #get foot width
-    boxw = box[2] - box[0]
-    boxh = box[3] - box[1]
-    if boxw > boxh:
-        boxw = box[3] - box[1]
-        boxh = box[2] - box[0] 
-    footWidth = helpers.calculateWidthCategory(boxh, boxw)
+        #get foot width
+        boxw = box[2] - box[0]
+        boxh = box[3] - box[1]
+        if boxw > boxh:
+            boxw = box[3] - box[1]
+            boxh = box[2] - box[0] 
+        footWidth = helpers.calculateWidthCategory(boxh, boxw)
 
     #process image
     img = imread(image_path)
