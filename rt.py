@@ -67,7 +67,6 @@ def main():
 
 
     cap.release()
-    box = []
     #find bounding box
     with st.spinner('Processing image...'):
         image_path = './captured_image.jpeg'
@@ -82,6 +81,7 @@ def main():
         st.pyplot(fig)
 
         #get foot width
+    if box:    
         boxw = box[2] - box[0]
         boxh = box[3] - box[1]
         if boxw > boxh:
