@@ -37,89 +37,89 @@ def process_and_display_bounding_boxes(frame, image_placeholder):
     return results
 
 
-def main():
-    st.title("Real-time Object Detection with YOLOS")
-    cap = cv2.VideoCapture(0)
-    #if not cap.isOpened():
-    #    st.error("Error: Could not open camera.")
-    #else:
-    closed = False
-    image_placeholder = st.empty()
-    if st.button("Capture Image and Stop"):
-        ret, frame = cap.read()
-        if ret:
-            image_filename = "captured_image.jpeg"
-            cv2.imwrite(image_filename, frame)
-            
-            process_and_display_bounding_boxes(frame, image_placeholder)
-            
-            st.text(f"Image saved as: {image_filename}")
-            closed = True
-
-            cap.release()
-
-    while not closed:
-        ret, frame = cap.read()
-        if not ret:
-            #st.error("Error: Could not read frame.")
-            break 
+#def main():
+st.title("Real-time Object Detection with YOLOS")
+cap = cv2.VideoCapture(0)
+#if not cap.isOpened():
+#    st.error("Error: Could not open camera.")
+#else:
+closed = False
+image_placeholder = st.empty()
+if st.button("Capture Image and Stop"):
+    ret, frame = cap.read()
+    if ret:
+        image_filename = "captured_image.jpeg"
+        cv2.imwrite(image_filename, frame)
+        
         process_and_display_bounding_boxes(frame, image_placeholder)
+        
+        st.text(f"Image saved as: {image_filename}")
+        closed = True
+
+        cap.release()
+
+while not closed:
+    ret, frame = cap.read()
+    if not ret:
+        #st.error("Error: Could not read frame.")
+        break 
+    process_and_display_bounding_boxes(frame, image_placeholder)
 
 
-    cap.release()
-    #find bounding box
-    with st.spinner('Processing image...'):
-        image_path = './captured_image.jpeg'
-        results = helpers.get_bounding_boxes(image_path)
-        fig, ax = plt.subplots(1)
-        image = Image.open(image_path) 
-        ax.imshow(image)
-        box = None
+cap.release()
+#find bounding box
+with st.spinner('Processing image...'):
+    image_path = './captured_image.jpeg'
+    results = helpers.get_bounding_boxes(image_path)
+    fig, ax = plt.subplots(1)
+    image = Image.open(image_path) 
+    ax.imshow(image)
+    box = None
 
-        for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
-            box = [round(i, 2) for i in box.tolist()]
-            rect = patches.Rectangle((box[0], box[1]), box[2] - box[0], box[3] - box[1], linewidth=1, edgecolor="r", facecolor="none")
-            ax.add_patch(rect)
-        st.pyplot(fig)
+    for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
+        box = [round(i, 2) for i in box.tolist()]
+        rect = patches.Rectangle((box[0], box[1]), box[2] - box[0], box[3] - box[1], linewidth=1, edgecolor="r", facecolor="none")
+        ax.add_patch(rect)
+    st.pyplot(fig)
 
-        #get foot width
-        if box:    
-            boxw = box[2] - box[0]
-            boxh = box[3] - box[1]
-            if boxw > boxh:
-                boxw = box[3] - box[1]
-                boxh = box[2] - box[0] 
-            footWidth = helpers.calculateWidthCategory(boxh, boxw)
+    #get foot width
+    if box:    
+        boxw = box[2] - box[0]
+        boxh = box[3] - box[1]
+        if boxw > boxh:
+            boxw = box[3] - box[1]
+            boxh = box[2] - box[0] 
+        footWidth = helpers.calculateWidthCategory(boxh, boxw)
 
-    #process image
-    img = imread(image_path)
-    clusteredImage = helpers.kMeans_cluster(img)
-    st.image(clusteredImage, caption='Clustered Image', use_column_width=True)
+#process image
+img = imread(image_path)
+clusteredImage = helpers.kMeans_cluster(img)
+st.image(clusteredImage, caption='Clustered Image', use_column_width=True)
 
-    edgedImg = helpers.edgeDetection(clusteredImage)
-    st.image(edgedImg, caption='Edged Image', use_column_width=True)
-    imsave('edged.jpg', edgedImg)
+edgedImg = helpers.edgeDetection(clusteredImage)
+st.image(edgedImg, caption='Edged Image', use_column_width=True)
+imsave('edged.jpg', edgedImg)
 
-    #get foot shape
-    #model = tf.keras.models.load_model('footShapeANN80.h5')
+#get foot shape
+#model = tf.keras.models.load_model('footShapeANN80.h5')
 
-    REPO_ID = "kakaseniko/fsd"
-    FILENAME = "fsd.h5"
+REPO_ID = "kakaseniko/fsd"
+FILENAME = "fsd.h5"
 
-    model = tf.keras.models.load_model(hf_hub_download(repo_id=REPO_ID, filename=FILENAME))
-    probability_model = tf.keras.Sequential([model, tf.keras.layers.Softmax()])
-    resized_image = helpers.resize_image('./edged.jpg', (480, 480))
-    img = (np.expand_dims(resized_image,0))
-    prediction = probability_model.predict(img)
-    footshape = helpers.decodePrediction(prediction)
+model = tf.keras.models.load_model(hf_hub_download(repo_id=REPO_ID, filename=FILENAME))
+probability_model = tf.keras.Sequential([model, tf.keras.layers.Softmax()])
+resized_image = helpers.resize_image('./edged.jpg', (480, 480))
+img = (np.expand_dims(resized_image,0))
+prediction = probability_model.predict(img)
+footshape = helpers.decodePrediction(prediction)
 
-    #get shoes
-    shoesdf = pd.read_csv('./climbingshoesdata.csv')
-    shoes = shoesdf.query(f'{footshape} == 1 & {footWidth} == 1')
-    st.write(footshape, footWidth)
-    st.table(shoes)
+#get shoes
+shoesdf = pd.read_csv('./climbingshoesdata.csv')
+shoes = shoesdf.query(f'{footshape} == 1 & {footWidth} == 1')
+st.write(footshape, footWidth)
+st.table(shoes)
 
-    helpers.display_results(shoes)
+helpers.display_results(shoes)
 
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+#    main()
