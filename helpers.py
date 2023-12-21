@@ -4,13 +4,10 @@ import numpy as np
 from transformers import AutoImageProcessor, DetrForObjectDetection
 import torch
 from PIL import Image
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 from sklearn.cluster import KMeans
 from skimage.io import imread, imsave
 import tensorflow as tf
-import pandas as pd
-from huggingface_hub import hf_hub_download
+
 
 def calculateWidthCategory(boxh, boxw):
     ratio = boxw / boxh
@@ -99,68 +96,3 @@ def display_results(shoes):
             selected_envs = [env for env in env_options if row[env] == 1]
             st.checkbox('indoor', key=f"{index}_indoor", value=('indoor' in selected_envs), disabled=True)
             st.checkbox('outdoor', key=f"{index}_outdoor", value=('outdoor' in selected_envs), disabled=True)
-
-#APP
-
-img_file_buffer = st.camera_input("Take a picture")
-
-if img_file_buffer is not None:
-    #take image
-    bytes_data = img_file_buffer.getvalue()
-    cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
-    cv2.imwrite('captured.jpeg', cv2_img)
-
-    #find bounding box
-    image_path = './captured.jpeg'
-    results = get_bounding_boxes(image_path)
-    fig, ax = plt.subplots(1)
-    image = Image.open(image_path) 
-    ax.imshow(image)
-    for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
-        box = [round(i, 2) for i in box.tolist()]
-        rect = patches.Rectangle((box[0], box[1]), box[2] - box[0], box[3] - box[1], linewidth=1, edgecolor="r", facecolor="none")
-        ax.add_patch(rect)
-    st.pyplot(fig)
-
-    #get foot width
-    boxw = box[2] - box[0]
-    boxh = box[3] - box[1]
-    if boxw > boxh:
-        boxw = box[3] - box[1]
-        boxh = box[2] - box[0] 
-    footWidth = calculateWidthCategory(boxh, boxw)
-
-    #process image
-    img = imread(image_path)
-    clusteredImage = kMeans_cluster(img)
-    st.image(clusteredImage, caption='Clustered Image', use_column_width=True)
-
-    edgedImg = edgeDetection(clusteredImage)
-    st.image(edgedImg, caption='Edged Image', use_column_width=True)
-    imsave('edged.jpg', edgedImg)
-
-    #get foot shape
-    #model = tf.keras.models.load_model('footShapeANN80.h5')
-
-    REPO_ID = "kakaseniko/fsd"
-    FILENAME = "fsd.h5"
-
-    model = tf.keras.models.load_model(hf_hub_download(repo_id=REPO_ID, filename=FILENAME))
-    probability_model = tf.keras.Sequential([model, tf.keras.layers.Softmax()])
-    resized_image = resize_image('./edged.jpg', (480, 480))
-    img = (np.expand_dims(resized_image,0))
-    prediction = probability_model.predict(img)
-    footshape = decodePrediction(prediction)
-
-    #get shoes
-    shoesdf = pd.read_csv('./climbingshoesdata.csv')
-    shoes = shoesdf.query(f'{footshape} == 1 & {footWidth} == 1')
-    st.write(footshape, footWidth)
-    st.table(shoes)
-
-    display_results(shoes)
-
-
-
-
-
