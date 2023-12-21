@@ -68,6 +68,7 @@ def main():
 
     cap.release()
     #find bounding box
+    box = None
     with st.spinner('Processing image...'):
         image_path = './captured_image.jpeg'
         results = helpers.get_bounding_boxes(image_path)
