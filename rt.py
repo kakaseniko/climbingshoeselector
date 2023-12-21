@@ -68,13 +68,14 @@ def main():
 
     cap.release()
     #find bounding box
-    box = None
     with st.spinner('Processing image...'):
         image_path = './captured_image.jpeg'
         results = helpers.get_bounding_boxes(image_path)
         fig, ax = plt.subplots(1)
         image = Image.open(image_path) 
         ax.imshow(image)
+        box = None
+
         for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
             box = [round(i, 2) for i in box.tolist()]
             rect = patches.Rectangle((box[0], box[1]), box[2] - box[0], box[3] - box[1], linewidth=1, edgecolor="r", facecolor="none")
@@ -82,13 +83,13 @@ def main():
         st.pyplot(fig)
 
         #get foot width
-    if box:    
-        boxw = box[2] - box[0]
-        boxh = box[3] - box[1]
-        if boxw > boxh:
-            boxw = box[3] - box[1]
-            boxh = box[2] - box[0] 
-        footWidth = helpers.calculateWidthCategory(boxh, boxw)
+        if box:    
+            boxw = box[2] - box[0]
+            boxh = box[3] - box[1]
+            if boxw > boxh:
+                boxw = box[3] - box[1]
+                boxh = box[2] - box[0] 
+            footWidth = helpers.calculateWidthCategory(boxh, boxw)
 
     #process image
     img = imread(image_path)
