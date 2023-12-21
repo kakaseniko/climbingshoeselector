@@ -115,11 +115,12 @@ footshape = helpers.decodePrediction(prediction)
 
 #get shoes
 shoesdf = pd.read_csv('./climbingshoesdata.csv')
-shoes = shoesdf.query(f'{footshape} == 1 & {footWidth} == 1')
-st.write(footshape, footWidth)
-st.table(shoes)
+if footshape and footWidth:
+    shoes = shoesdf.query(f'{footshape} == 1 & {footWidth} == 1')
+    st.write(footshape, footWidth)
+    st.table(shoes)
 
-helpers.display_results(shoes)
+    helpers.display_results(shoes)
 
 #if __name__ == "__main__":
 #    main()
