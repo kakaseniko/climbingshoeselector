@@ -67,7 +67,7 @@ def main():
 
 
     cap.release()
-
+    box = []
     #find bounding box
     with st.spinner('Processing image...'):
         image_path = './captured_image.jpeg'
