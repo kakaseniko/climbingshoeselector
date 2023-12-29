@@ -1,12 +1,27 @@
 import streamlit as st
 import cv2
 import numpy as np
-from transformers import AutoImageProcessor, DetrForObjectDetection
+from transformers import YolosForObjectDetection, YolosImageProcessor
 import torch
 from PIL import Image
 from sklearn.cluster import KMeans
 from skimage.io import imread, imsave
 import tensorflow as tf
+from huggingface_hub import hf_hub_download
+
+@st.cache_resource
+def load_yolo():
+    model = YolosForObjectDetection.from_pretrained('hustvl/yolos-tiny')
+    image_processor = YolosImageProcessor.from_pretrained("hustvl/yolos-tiny")
+    return model, image_processor
+
+@st.cache_resource
+def load_ann():
+    REPO_ID = "kakaseniko/fsd"
+    FILENAME = "fsd.h5"
+    model = tf.keras.models.load_model(hf_hub_download(repo_id=REPO_ID, filename=FILENAME))
+    probability_model = tf.keras.Sequential([model, tf.keras.layers.Softmax()])
+    return probability_model
 
 
 def calculateWidthCategory(boxh, boxw):
@@ -21,15 +36,14 @@ def calculateWidthCategory(boxh, boxw):
     return category
 
 def get_bounding_boxes(image_path):
-    image = Image.open(image_path) 
-    image_processor = AutoImageProcessor.from_pretrained("facebook/detr-resnet-50")
-    model = DetrForObjectDetection.from_pretrained("facebook/detr-resnet-50")
+    image = Image.open(image_path)
+    model, image_processor = load_yolo()
+
     inputs = image_processor(images=image, return_tensors="pt")
     outputs = model(**inputs)
+
     target_sizes = torch.tensor([image.size[::-1]])
-    results = image_processor.post_process_object_detection(outputs, threshold=0.9, target_sizes=target_sizes)[
-        0
-    ]
+    results = image_processor.post_process_object_detection(outputs, threshold=0.9, target_sizes=target_sizes)[0]
     for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
         box = [round(i, 2) for i in box.tolist()]
     return results
@@ -96,3 +110,10 @@ def display_results(shoes):
             selected_envs = [env for env in env_options if row[env] == 1]
             st.checkbox('indoor', key=f"{index}_indoor", value=('indoor' in selected_envs), disabled=True)
             st.checkbox('outdoor', key=f"{index}_outdoor", value=('outdoor' in selected_envs), disabled=True)
+
+def predict_foot_shape(image_path):
+    probability_model = load_ann()
+    resized_image = resize_image(image_path, (480, 480))
+    img = (np.expand_dims(resized_image,0))
+    prediction = probability_model.predict(img)
+    return decodePrediction(prediction)
