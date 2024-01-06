@@ -1,4 +1,6 @@
 import streamlit as st
+import os
+os.environ['PYOPENGL_PLATFORM'] = 'osmesa'
 import cv2
 import numpy as np
 from PIL import Image
