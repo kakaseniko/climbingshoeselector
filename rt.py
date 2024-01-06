@@ -13,9 +13,6 @@ from huggingface_hub import hf_hub_download
 from skimage.io import imread, imsave
 
 
-
-
-
 def process_and_display_bounding_boxes(frame, image_placeholder):
     model = YolosForObjectDetection.from_pretrained('hustvl/yolos-tiny')
     image_processor = YolosImageProcessor.from_pretrained("hustvl/yolos-tiny")
@@ -39,7 +36,7 @@ def process_and_display_bounding_boxes(frame, image_placeholder):
 
 #def main():
 st.title("Real-time Object Detection with YOLOS")
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(2)
 #if not cap.isOpened():
 #    st.error("Error: Could not open camera.")
 #else:

@@ -27,16 +27,29 @@ if img_file_buffer is not None:
     image_path = './captured.jpeg'
     results = helpers.get_bounding_boxes(image_path)
 
-    if len(results["boxes"]) == 0:
+    if len(results) == 0:
         st.error("No foot detected")
         st.stop()
 
     fig, ax = plt.subplots(1)
     image = Image.open(image_path) 
     ax.imshow(image)
-    for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
-        box = [round(i, 2) for i in box.tolist()]
-        rect = patches.Rectangle((box[0], box[1]), box[2] - box[0], box[3] - box[1], linewidth=1, edgecolor="r", facecolor="none")
+    box_coordinates = results.xyxy.cpu().numpy()
+    min_area = float('inf')
+    min_box = None
+    for box in box_coordinates:
+        x_min, y_min, x_max, y_max = box[:4]
+        area = (x_max - x_min) * (y_max - y_min)
+
+    # Check if the current bounding box has a smaller area than the minimum
+    if area < min_area:
+        min_area = area
+        min_box = box
+
+    # Plot the bounding boxes
+    if min_box is not None:
+        x_min, y_min, x_max, y_max = box[:4]
+        rect = patches.Rectangle((x_min, y_min), x_max - x_min, y_max - y_min, linewidth=2, edgecolor='r', facecolor='none')
         ax.add_patch(rect)
     st.pyplot(fig)
 

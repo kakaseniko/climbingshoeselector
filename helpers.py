@@ -1,19 +1,17 @@
 import streamlit as st
 import cv2
 import numpy as np
-from transformers import YolosForObjectDetection, YolosImageProcessor
-import torch
 from PIL import Image
 from sklearn.cluster import KMeans
-from skimage.io import imread, imsave
 import tensorflow as tf
 from huggingface_hub import hf_hub_download
+from ultralytics import YOLO
+
 
 @st.cache_resource
 def load_yolo():
-    model = YolosForObjectDetection.from_pretrained('hustvl/yolos-tiny')
-    image_processor = YolosImageProcessor.from_pretrained("hustvl/yolos-tiny")
-    return model, image_processor
+    model = YOLO('yolov8n.yaml').load('yolov8n.pt')
+    return model
 
 @st.cache_resource
 def load_ann():
@@ -36,17 +34,11 @@ def calculateWidthCategory(boxh, boxw):
     return category
 
 def get_bounding_boxes(image_path):
-    image = Image.open(image_path)
-    model, image_processor = load_yolo()
-
-    inputs = image_processor(images=image, return_tensors="pt")
-    outputs = model(**inputs)
-
-    target_sizes = torch.tensor([image.size[::-1]])
-    results = image_processor.post_process_object_detection(outputs, threshold=0.9, target_sizes=target_sizes)[0]
-    for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
-        box = [round(i, 2) for i in box.tolist()]
-    return results
+    model = load_yolo()
+    results = model(image_path)
+    for result in results:
+        boxes = result.boxes  # Boxes object for bbox outputs
+    return boxes
 
 def kMeans_cluster(img):
     image_2D = img.reshape(img.shape[0]*img.shape[1], img.shape[2])
